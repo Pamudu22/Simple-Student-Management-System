@@ -1,4 +1,5 @@
 import * as React from 'react';
+import axios from 'axios';
 import Box from '@mui/material/Box';
 import TextField from '@mui/material/TextField';
 import { Container, Paper, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, IconButton } from '@mui/material';
@@ -13,68 +14,50 @@ export default function Student() {
   const [isEditing, setIsEditing] = React.useState(false);
   const [currentId, setCurrentId] = React.useState(null);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const student = { name, address };
 
-    if (isEditing) {
-      // Update student
-      fetch(`http://localhost:8080/student/update/${currentId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(student)
-      })
-      .then(response => response.json())
-      .then(() => {
+    try {
+      if (isEditing) {
+        await axios.put(`http://localhost:8080/student/update/${currentId}`, student);
         console.log("Student Updated");
-        setIsEditing(false);
-        setName('');
-        setAddress('');
-        setCurrentId(null);
-        fetchStudents();
-      })
-      .catch(error => console.error("Error updating student:", error));
-    } else {
-      // Add new student
-      fetch("http://localhost:8080/student/add", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(student)
-      })
-      .then(response => response.json())
-      .then(() => {
+      } else {
+        await axios.post("http://localhost:8080/student/add", student);
         console.log("New Student Added");
-        fetchStudents();
-        setName('');
-        setAddress('');
-      })
-      .catch(error => console.error("Error adding student:", error));
+      }
+      setIsEditing(false);
+      setName('');
+      setAddress('');
+      setCurrentId(null);
+      fetchStudents();
+    } catch (error) {
+      console.error("Error submitting student:", error);
     }
-  }
+  };
 
-  const fetchStudents = () => {
-    fetch("http://localhost:8080/student/getAll")
-      .then(res => res.json())
-      .then((result) => {
-        setStudents(result);
-      })
-      .catch(error => console.error("Error fetching students:", error));
-  }
+  const fetchStudents = async () => {
+    try {
+      const response = await axios.get("http://localhost:8080/student/getAll");
+      setStudents(response.data);
+    } catch (error) {
+      console.error("Error fetching students:", error);
+    }
+  };
 
   React.useEffect(() => {
     fetchStudents();
   }, []);
 
-  const handleDelete = (id) => {
-    fetch(`http://localhost:8080/student/delete/${id}`, {
-      method: 'DELETE',
-    })
-    .then(() => {
+  const handleDelete = async (id) => {
+    try {
+      await axios.delete(`http://localhost:8080/student/delete/${id}`);
       console.log("Student Deleted");
       fetchStudents();
-    })
-    .catch(error => console.error("Error deleting student:", error));
-  }
+    } catch (error) {
+      console.error("Error deleting student:", error);
+    }
+  };
 
   const handleEdit = (id) => {
     const studentToEdit = students.find(student => student.id === id);
@@ -84,7 +67,7 @@ export default function Student() {
       setCurrentId(id);
       setIsEditing(true);
     }
-  }
+  };
 
   return (
     <Container>
@@ -117,7 +100,6 @@ export default function Student() {
             {isEditing ? "Update" : "Save"}
           </Button>
 
-          {/* Table to show student data */}
           <TableContainer component={Paper} style={{ marginTop: 20 }}>
             <Table aria-label="student table">
               <TableHead>
